@@ -242,6 +242,12 @@ public class TwitchClient : MonoBehaviour
             ReplyToPlayer(messageId, ph.pp.TwitchUsername, $"Share to start your pyramid scheme. Every player that joins the stream with your invite link earns you 50% of the points, and 25% of the gold they earn (The gold compounds)! \n{url}");
             return;
         }
+        
+        else if (commandKey.StartsWith("!claimInvitePatron"))
+        {
+            StartCoroutine(ProcessClaimInvitePatron(messageId, ph, msg));
+        }
+        
         else if (commandKey.StartsWith("!coinflip") || commandKey.StartsWith("!flipcoin"))
         {
             string coinMsg = (UnityEngine.Random.Range(0f, 1f) < 0.5f) ? "The RNG Gods declare... HEADS" : "The RNG Gods declare... TAILS";
@@ -686,5 +692,26 @@ public class TwitchClient : MonoBehaviour
         }
 
         return noEmotesSb.ToString();
+    }
+    
+    private IEnumerator ProcessClaimInvitePatron(string messageId, PlayerHandler ph, string msg)
+    {
+        if (!MyUtil.GetUsernameFromString(msg, out string targetUsername))
+        {
+            ReplyToPlayer(messageId, ph.pp.TwitchUsername, "Failed to find target username. Correct format is: !tomato [amount] @username");
+            yield break;
+        }
+        
+        CoroutineResult<PlayerHandler> coResult = new CoroutineResult<PlayerHandler>();
+        yield return _gm.GetPlayerByUsername(targetUsername, coResult);
+        PlayerHandler targetPlayer = coResult.Result;
+        
+        if (targetPlayer == null)
+        {
+            ReplyToPlayer(messageId, ph.pp.TwitchUsername, $"Failed to find player with username: {targetUsername}");
+            yield break;
+        }
+
+        yield return ph.SetInvitor(targetPlayer, this, _gm.GetInvitePromo());
     }
 }
