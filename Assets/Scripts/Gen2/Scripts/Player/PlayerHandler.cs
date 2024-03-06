@@ -697,7 +697,7 @@ public class PlayerHandler : MonoBehaviour, TravelingIndicatorIO, TI_Bid_IO
         FlaggedToUnload = true; 
     }
 
-    public IEnumerator SetInvitor(PlayerHandler inviter, TwitchClient twitchClient, InvitePromo invitePromo)
+    public IEnumerator SetInvitor(PlayerHandler inviter, TwitchClient twitchClient, InvitePromo invitePromo, bool isChatRequest = false)
     {
         //If they were already invited, don't allow them to change it again this stream
 /*        if (!string.IsNullOrEmpty(pp.InvitedByID))
@@ -722,8 +722,10 @@ public class PlayerHandler : MonoBehaviour, TravelingIndicatorIO, TI_Bid_IO
             yield break;
         }
 */
-        //If this player handler was already active in the stream in the last hour
-        if(pp.LastInteraction != null && pp.LastInteraction > DateTime.Now.AddHours(-1))
+
+        // If this player handler was already active in the stream in the last hour
+        // do not allow them to be invited via invite link
+        if(!isChatRequest && pp.LastInteraction != null && pp.LastInteraction > DateTime.Now.AddHours(-1))
         {
             TimeSpan timeDifference = DateTime.Now - pp.LastInteraction;
             int secondsAgo = (int)timeDifference.TotalSeconds;
