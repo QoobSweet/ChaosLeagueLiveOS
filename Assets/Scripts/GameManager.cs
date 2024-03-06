@@ -344,6 +344,10 @@ public class GameManager : MonoBehaviour
         return _rebellionController; 
     }
 
+    public InvitePromo GetInvitePromo()
+    {
+        return _invitePromo;
+    }
 
     private IEnumerator SaveAndQuit()
     {
