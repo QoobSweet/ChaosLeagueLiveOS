@@ -53,7 +53,8 @@ public class PlayerHandler : MonoBehaviour, TravelingIndicatorIO, TI_Bid_IO
     public bool FlaggedToUnload = false;
 
     //public long SessionScoreBeforeTileStarts = 0; 
-    public long TilePointsROI = 0; 
+    public long TilePointsROI = 0;
+    public long TilePointsROI2 = 0;
 
     private float _receiveGoldTimer = 0;
     private long _receiveGoldAccumulator = 0; 
@@ -387,12 +388,16 @@ public class PlayerHandler : MonoBehaviour, TravelingIndicatorIO, TI_Bid_IO
     {
 
         if (createTextPopup)
-            TextPopupMaster.Inst.CreateTextPopup(Get_TI_IO_Position(), textPopupDirection, "-" + MyUtil.AbbreviateNum4Char(pp.SessionScore), Color.red);
+            TextPopupMaster.Inst.CreateTextPopup(Get_TI_IO_Position(), textPopupDirection, "-" + pp.GetSessionScoreString(), Color.red);
 
-        if(contributeToROI)
-            TilePointsROI -= pp.SessionScore; 
+        if (contributeToROI)
+        {
+            TilePointsROI -= pp.SessionScore;
+            TilePointsROI2 -= pp.SessionScore_2;
+        }
 
         pp.SessionScore = 0;
+        pp.SessionScore_2 = 0;
 
         UpdateBallPointsText();
 
@@ -403,21 +408,23 @@ public class PlayerHandler : MonoBehaviour, TravelingIndicatorIO, TI_Bid_IO
             pb.ExplodeBall();
 
     }
-    public void SubtractPoints(long amount, bool canKill, bool createTextPopup, bool contributeToROI = true)
+    public void SubtractPoints(long amount, long amount2, bool canKill, bool createTextPopup, bool contributeToROI = true)
     {
-        SubtractPoints(amount, canKill, createTextPopup, Vector2.up, contributeToROI);
+        SubtractPoints(amount, amount2, canKill, createTextPopup, Vector2.up, contributeToROI);
     }
-    public void SubtractPoints(long amount, bool canKill, bool createTextPopup, Vector3 textPopupDirection, bool contributeToROI = true)
+    public void SubtractPoints(long amount, long amount2, bool canKill, bool createTextPopup, Vector3 textPopupDirection, bool contributeToROI = true)
     {
-        pp.SessionScore -= amount;
+        (pp.SessionScore, pp.SessionScore_2) =
+            MyUtil.CalculateDualColumnScore(pp.SessionScore, pp.SessionScore_2, "subtract", amount, amount2);
 
         if (contributeToROI)
-            TilePointsROI -= amount; 
-
-        if (pp.SessionScore <= 0)
         {
-            pp.SessionScore = 0;
+            (TilePointsROI, TilePointsROI2) =
+                MyUtil.CalculateDualColumnScore(TilePointsROI, TilePointsROI2, "subtract", amount, amount2);
+        }
 
+        if (pp.SessionScore_2 == 0 && pp.SessionScore == 0)
+        {
             if (canKill && pb != null)
             {
                 pb._pointsText.SetText("");
@@ -473,7 +480,8 @@ public class PlayerHandler : MonoBehaviour, TravelingIndicatorIO, TI_Bid_IO
     }
     public void AddPoints(long points, bool createTextPopup, Vector3 textPopupDirection,  bool contributeToROI = true, bool doInviteBonus = true)
     {
-        pp.SessionScore += points;
+        (pp.SessionScore, pp.SessionScore_2) =
+            MyUtil.CalculateDualColumnScore(pp.SessionScore, pp.SessionScore_2, "add", points, 0);
 
         if (doInviteBonus)
             StartCoroutine(CheckBonusToInviterPoints(points));
@@ -503,13 +511,22 @@ public class PlayerHandler : MonoBehaviour, TravelingIndicatorIO, TI_Bid_IO
     public void MultiplyPoints(float multiplier, bool createTextPopup, Vector3 textPopupDirection, bool contributeToROI = true, bool doInviteBonus = true)
     {
         long prevScore = pp.SessionScore;
-        pp.SessionScore = (long)(pp.SessionScore * multiplier);
+        long prevScore2 = pp.SessionScore_2;
+        (pp.SessionScore, pp.SessionScore_2) =
+            MyUtil.CalculateDualColumnScore(pp.SessionScore, pp.SessionScore_2, "multiply", multiplier, 0);
+
+        long diffCount;
+        long diffCount2;
+        (diffCount, diffCount2) = MyUtil.CalculateDualColumnScore(pp.SessionScore, pp.SessionScore_2, "subtract", prevScore, prevScore2);
 
         if (contributeToROI)
-            TilePointsROI += (pp.SessionScore - prevScore);
+        {
+            TilePointsROI = diffCount;
+            TilePointsROI2 = diffCount2;
+        }
 
         if(doInviteBonus)
-            StartCoroutine(CheckBonusToInviterPoints(pp.SessionScore - prevScore));
+            StartCoroutine(CheckBonusToInviterPoints(diffCount, diffCount2));
 
         UpdateBallPointsText();
 
@@ -623,7 +640,7 @@ public class PlayerHandler : MonoBehaviour, TravelingIndicatorIO, TI_Bid_IO
         }
     }
 
-    private IEnumerator CheckBonusToInviterPoints(long amount)
+    private IEnumerator CheckBonusToInviterPoints(long amount, long amount2 = 0)
     {
         if (string.IsNullOrEmpty(pp.InvitedByID))
             yield break;

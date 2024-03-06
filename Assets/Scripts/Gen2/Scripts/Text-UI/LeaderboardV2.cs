@@ -27,7 +27,7 @@ public class LeaderboardV2 : MonoBehaviour
             {
                 //Update leaderboard with who has the most points. Was somehow getting null values in the playerhandlers dictionary causing an error
                 foreach (PlayerHandler ph in _gm.PlayerHandlers.Values.Where(x => x != null && x.pp != null).OrderByDescending(x => x.pp.SessionScore).Take(3).ToList())
-                    entries.Add((ph.pp.TwitchUsername, MyUtil.AbbreviateNum4Char(ph.pp.SessionScore).ToString()));
+                    entries.Add((ph.pp.TwitchUsername, ph.pp.GetSessionScoreString()));
             }
             catch (Exception e)
             {

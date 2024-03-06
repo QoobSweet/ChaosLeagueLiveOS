@@ -498,4 +498,122 @@ public static class MyUtil
         else
             return _default; 
     }
+
+    public static string getAbbreviatedDualNumberColumnString(long number1, long number2)
+    {
+        var _ss1MonizationMap = new Dictionary<long, string>
+        {
+            {1000000000000000000, "Q"}, // quintillion
+            {1000000000000000, "q"}, // quadrillion
+            {1000000000000, "t"}, // trillion
+            {1000000000, "b"}, // billion
+            {1000000, "m"}, // million
+            {1000, "k"}, // thousand
+        };
+        
+        var _ss2MonizationMap = new Dictionary<long, string>
+        {
+            {1000000000000000, "U"}, // undecillion
+            {1000000000000, "D"}, // decillion
+            {1000000000, "N"}, // nonillion
+            {1000000, "O"}, // octillion
+            {1000, "S"}, // septillion
+            {1, "s"}, // sextillion
+        };
+        
+        string SS1 = "";
+        string SS2 = "";
+        
+        if (number2 > 0)
+        {
+            foreach (var pair in _ss2MonizationMap)
+            {
+                if (number2 >= pair.Key)
+                {
+                    SS2 = (number2 / pair.Key).ToString();
+                    break;
+                }
+            }
+        }
+        else
+        {
+            foreach (var pair in _ss1MonizationMap)
+            {
+                if (number1 >= pair.Key)
+                {
+                    SS1 = (number1 / pair.Key).ToString();
+                    break;
+                }
+            }
+        }
+        
+        return SS2 != "" ? SS2 + GetSessionScoreAbbreviation(number2) : SS1 + GetSessionScoreAbbreviation(number1);
+    }
+
+    public static (long, long) CalculateDualColumnScore(long number1, long number2, string function, object modifierNumber1,
+        long modifierNumber2 = 0)
+    {
+        if (function == "add")
+        {
+            number1 += (long) modifierNumber1;
+            // if number1 >= 1 sextillion, add 1 to number2 and subtract 1 sextillion from number1
+            if (number1 >= 1000000000000000)
+            {
+                number1 -= 1000000000000000;
+                number2 += 1;
+            }
+
+            number2 += modifierNumber2;
+        } 
+        else if (function == "subtract")
+        {
+            number1 -= (long) modifierNumber1;
+            if (number1 < 0 && number2 > 0)
+            {
+                number1 += 1000000000000000;
+                number2 -= 1;
+                
+                // do not allow negative numbers
+                if (number1 < 0)
+                {
+                    number1 = 0;
+                }
+            }
+
+            number2 -= modifierNumber2;
+            // do not allow negative numbers
+            if (number2 < 0)
+            {
+                number2 = 0;
+            }
+        }
+        else if (function == "multiply")
+        {
+            // number2 should never be used in a multiply function. If it is, something went wrong. Log an error and return the original numbers
+            if (number2 > 0)
+            {
+                Debug.LogError("Number2 should not be used in a multiply function");
+                return (number1, number2);
+            }
+            
+            // number1 can potentially be the max value of a long, so instead of multiplying number1, we will save the value of number1 in a cache and incrementally add it to number1 by the ammount of modifierNumber1
+            long cache = number1;
+            for (int i = 0; i < (float) modifierNumber1; i++)
+            {
+                number1 += cache;
+                if (number1 >= 1000000000000000)
+                {
+                    number1 -= 1000000000000000;
+                    number2 += 1;
+                }
+            }
+        }
+        else
+        {
+            Debug.LogError("No valid function was found: " + function);
+            return (number1, number2);
+        }
+    
+        return (number1, number2);
+    }
 }

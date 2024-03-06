@@ -20,7 +20,7 @@ public class PBHologram : MonoBehaviour
 
     public void UpdateHologramPoints()
     {
-        PointsText.SetText(MyUtil.AbbreviateNum4Char(Ph.pp.SessionScore));
+        PointsText.SetText(Ph.pp.GetSessionScoreString());
     }
 
 }
