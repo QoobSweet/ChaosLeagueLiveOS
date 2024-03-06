@@ -41,6 +41,86 @@ public class PlayerProfile
     public int Gold { get; set; }
     public int SeasonScore { get; set; }
     public long SessionScore { get; set; }
+    public long SessionScore_2 { get; set; }
+
+    private var _ss1MonizationMap = new Dictionary<long, string>
+    {
+        {1000000000000000000, "Q"}, // quintillion
+        {1000000000000000, "q"}, // quadrillion
+        {1000000000000, "t"}, // trillion
+        {1000000000, "b"}, // billion
+        {1000000, "m"}, // million
+        {1000, "k"}, // thousand
+    };
+    
+    private var _ss2MonizationMap = new Dictionary<long, string>
+    {
+        {1000000000000000, "U"}, // undecillion
+        {1000000000000, "D"}, // decillion
+        {1000000000, "N"}, // nonillion
+        {1000000, "O"}, // octillion
+        {1000, "S"}, // septillion
+        {1, "s"}, // sextillion
+    };
+
+    public string GetSessionScoreString()
+    {
+        string SS1 = "";
+        string SS2 = "";
+
+        if (SessionScore_2 > 0)
+        {
+            foreach (var pair in _ss2MonizationMap)
+            {
+                if (SessionScore_2 >= pair.Key)
+                {
+                    SS2 = (SessionScore_2 / pair.Key).ToString();
+                    break;
+                }
+            }
+        }
+        else
+        {
+            foreach (var pair in _ss1MonizationMap)
+            {
+                if (SessionScore >= pair.Key)
+                {
+                    SS1 = (SessionScore / pair.Key).ToString();
+                    break;
+                }
+            }
+        }
+        
+        return SS2 != "" ? SS2 + GetSessionScoreAbbreviation() : SS1 + GetSessionScoreAbbreviation();
+    }
+
+    private string GetSessionScoreAbbreviation()
+    {
+
+        if (SessionScore_2 > 0)
+        {
+            foreach (var pair in _ss2MonizationMap)
+            {
+                if (SessionScore_2 >= pair.Key)
+                {
+                    return pair.Value;
+                }
+            }
+        }
+        else
+        {
+            foreach (var pair in _ss1MonizationMap)
+            {
+                if (SessionScore >= pair.Key)
+                {
+                    return pair.Value;
+                }
+            }
+        }
+
+        return "";
+    }
+    
     public DateTime LastInteraction { get; set; }
 
     public string[] GetInviteIds() 
